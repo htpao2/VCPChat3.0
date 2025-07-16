@@ -1,20 +1,20 @@
-# 工作流程的名称，会显示在 Actions 页面
+# Workflow name
 name: Auto Update Pull Requests
 
-# 触发条件：当有代码被推送到 main 分支时
+# Trigger: runs when code is pushed to the 'main' branch
 on:
   push:
     branches:
-      - main  # 注意：如果您的主分支叫 master，请把这里的 main 修改为 master
+      - main  # If your main branch is called 'master', change this line
 
 jobs:
   auto-update:
-    # 在 GitHub 的服务器上运行 (使用最新的 Ubuntu 系统)
+    # Runs on GitHub's servers
     runs-on: ubuntu-latest
     steps:
-      # 这里使用了社区写好的一个 Action，专门用来自动更新 PR
-      - uses: a-b-r-o-w-n/auto-update-pr@v1
+      # This is the replacement action
+      - uses: heavy-duty/auto-update-pull-request@v1
         with:
-          # 这是一个授权令牌，让 Action 有权限代表您操作。
-          # 您不需要修改这一行，GitHub 会自动处理。
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # This token gives the action permission to update the PR.
+          # You don't need to change this line.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
