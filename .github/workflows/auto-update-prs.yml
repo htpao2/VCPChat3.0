@@ -1,20 +1,44 @@
-# Workflow name
 name: Auto Update Pull Requests
 
-# Trigger: runs when code is pushed to the 'main' branch
+# Run on pushes to the 'main' branch
 on:
   push:
     branches:
-      - main  # If your main branch is called 'master', change this line
+      - main # Change to 'master' if that's your default branch
 
 jobs:
   auto-update:
-    # Runs on GitHub's servers
     runs-on: ubuntu-latest
+    # Grant permissions for the script to read/write pull requests
+    permissions:
+      pull-requests: write
     steps:
-      # This is the replacement action
-      - uses: heavy-duty/auto-update-pull-request@v1
+      # Step 1: Use the official GitHub Script action
+      - uses: actions/github-script@v7
         with:
-          # This token gives the action permission to update the PR.
-          # You don't need to change this line.
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get all open pull requests targeting the 'main' branch
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'main', // Change to 'master' if needed
+              state: 'open',
+            });
+
+            // Loop through each pull request
+            for (const pr of prs) {
+              console.log(`Checking PR #${pr.number}: ${pr.title}`);
+              
+              // Attempt to update the branch using the GitHub API
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                });
+                console.log(`Successfully requested update for PR #${pr.number}`);
+              } catch (error) {
+                console.error(`Failed to update PR #${pr.number}: ${error.message}`);
+                // Continue to the next PR even if one fails
+              }
+            }
