@@ -1,44 +1,49 @@
-name: Auto Update Pull Requests
+# 工作流程的名称
+name: Sync Fork from Upstream
 
-# Run on pushes to the 'main' branch
+# 触发条件
 on:
-  push:
-    branches:
-      - main # Change to 'master' if that's your default branch
+  # 1. 定时触发：每小时的第0分钟运行一次
+  schedule:
+    - cron: '0 * * * *'
+  # 2. 手动触发：允许您在 Actions 页面手动点击 "Run workflow" 来运行
+  workflow_dispatch:
 
 jobs:
-  auto-update:
+  sync:
     runs-on: ubuntu-latest
-    # Grant permissions for the script to read/write pull requests
-    permissions:
-      pull-requests: write
     steps:
-      # Step 1: Use the official GitHub Script action
-      - uses: actions/github-script@v7
+      # 第一步：先把您自己的仓库代码下载到运行器中
+      - name: Checkout your Fork
+        uses: actions/checkout@v4
         with:
-          script: |
-            // Get all open pull requests targeting the 'main' branch
-            const { data: prs } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              base: 'main', // Change to 'master' if needed
-              state: 'open',
-            });
+          # 需要一个令牌来推送代码，用默认的即可
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-            // Loop through each pull request
-            for (const pr of prs) {
-              console.log(`Checking PR #${pr.number}: ${pr.title}`);
-              
-              // Attempt to update the branch using the GitHub API
-              try {
-                await github.rest.pulls.updateBranch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: pr.number,
-                });
-                console.log(`Successfully requested update for PR #${pr.number}`);
-              } catch (error) {
-                console.error(`Failed to update PR #${pr.number}: ${error.message}`);
-                // Continue to the next PR even if one fails
-              }
-            }
+      # 第二步：执行同步脚本
+      - name: Sync with Upstream Repository
+        run: |
+          # 设置Git的用户名和邮箱
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+
+          # 添加原作者（lisky）的仓库作为“上游”远程地址
+          # ####################################################################
+          # 重要：请将下面的 'lisky/ORIGINAL_REPO_NAME' 替换为原始仓库的真实路径！
+          # 例如：如果原始仓库的网址是 https://github.com/lisky/project-abc
+          # 那么这里就要写成 git remote add upstream https://github.com/lisky/project-abc.git
+          # ####################################################################
+          git remote add upstream https://github.com/lioensky/VCPChat.git
+
+          # 从上游仓库获取最新的代码信息
+          git fetch upstream
+
+          # 切换到您自己的 main 分支
+          git checkout main
+
+          # 将上游仓库的 main 分支合并到您自己的 main 分支
+          # 如果有冲突，这一步会失败，需要您手动解决
+          git merge upstream/main
+
+          # 将更新后的 main 分支推送到您自己的仓库
+          git push origin main
