@@ -536,6 +536,17 @@ async function renderMessage(message, isInitialLoad = false) {
        });
    }
 
+    // Add logic for stopping TTS by clicking the avatar
+    // Add logic for stopping TTS by clicking the avatar
+    // Simplified logic: always add the click listener to assistant avatars.
+    // Clicking it will stop any ongoing TTS playback.
+    if (avatarImg && message.role === 'assistant') {
+        avatarImg.addEventListener('click', () => {
+            console.log(`[MessageRenderer] Avatar clicked for message ${message.id}. Stopping TTS.`);
+            mainRendererReferences.electronAPI.sovitsStop();
+        });
+    }
+
     // Determine avatar color and URL to use
     let avatarColorToUse;
     let avatarUrlToUse; // This was the missing variable
