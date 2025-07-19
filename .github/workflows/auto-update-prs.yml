@@ -43,7 +43,7 @@ jobs:
 
           # 将上游仓库的 main 分支合并到您自己的 main 分支
           # 如果有冲突，这一步会失败，需要您手动解决
-          git merge upstream/main
+          git merge upstream/main --allow-unrelated-histories
 
           # 将更新后的 main 分支推送到您自己的仓库
           git push origin main
