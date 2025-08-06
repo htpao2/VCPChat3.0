@@ -5,6 +5,7 @@
     <author email="dev@cordova.apache.org" href="https://cordova.apache.org">
         Apache Cordova Team
     </author>
+    <preference name="GradleDistributionUrl" value="https://services.gradle.org/distributions/gradle-7.6-all.zip" />
     <content src="index.html" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
