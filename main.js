@@ -21,7 +21,7 @@ const fileDialogHandlers = require('./modules/ipc/fileDialogHandlers'); // Impor
 const { getAgentConfigById, ...agentHandlers } = require('./modules/ipc/agentHandlers'); // Import agent handlers
 const chatHandlers = require('./modules/ipc/chatHandlers.refactored.js'); // Import chat handlers
 const groupChatHandlers = require('./modules/ipc/groupChatHandlers'); // Import group chat handlers
-const sovitsHandlers = require('./modules/ipc/sovitsHandlers'); // Import SovitsTTS IPC handlers
+const sovitsHandlers = require('./modules/ipc/sovitsHandlers.refactored.js'); // Import SovitsTTS IPC handlers
 const notesHandlers = require('./modules/ipc/notesHandlers'); // Import notes handlers
 const assistantHandlers = require('./modules/ipc/assistantHandlers'); // Import assistant handlers
 const musicHandlers = require('./modules/ipc/musicHandlers'); // Import music handlers
@@ -449,7 +449,7 @@ if (!gotTheLock) {
         startSelectionListener: assistantHandlers.startSelectionListener,
         getMusicState: musicHandlers.getMusicState
     });
-    sovitsHandlers.initialize(mainWindow); // Initialize SovitsTTS handlers
+    sovitsHandlers.initialize(mainWindow, { APP_DATA_ROOT_IN_PROJECT }); // Initialize SovitsTTS handlers
     musicHandlers.initialize({ mainWindow, openChildWindows, APP_DATA_ROOT_IN_PROJECT, startAudioEngine, stopAudioEngine });
     diceHandlers.initialize({ projectRoot: PROJECT_ROOT });
     themeHandlers.initialize({ mainWindow, openChildWindows, projectRoot: PROJECT_ROOT, APP_DATA_ROOT_IN_PROJECT });

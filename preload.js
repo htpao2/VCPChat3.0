@@ -312,5 +312,7 @@ console.log('[Preload] electronAPI object that *should* be exposed (structure ch
 console.log('preload.js loaded and contextBridge exposure attempted.');
 
 // Expose the new VCP Services for the mobile app PoC
-const { vcpServices } = require('./src/index.js');
+const vcpServices = require('./src/index.js');
+const ttsService = require('./src/services/ttsService.js');
 contextBridge.exposeInMainWorld('vcpServices', vcpServices);
+contextBridge.exposeInMainWorld('ttsService', ttsService);

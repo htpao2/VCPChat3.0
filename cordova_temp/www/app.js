@@ -7,17 +7,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const topicsListContainer = document.getElementById('topics-list');
     const messagesContainer = document.getElementById('messages-container');
     const launchDiceRollerBtn = document.getElementById('launch-dice-roller');
+    const ttsServerUrlInput = document.getElementById('tts-server-url');
 
-    // Check if the electronAPI is exposed
-    if (!window.electronAPI) {
+    // This is a PoC, so we are using the globally exposed APIs from preload.js
+    const api = window.electronAPI;
+    const ttsApi = window.ttsService;
+
+    if (!api) {
         agentListContainer.innerHTML = '<p style="color: red;">Error: electronAPI not found. Is this running in Electron?</p>';
+        return;
+    }
+     if (!ttsApi) {
+        agentListContainer.innerHTML += '<p style="color: red;">Error: ttsService not found. Check preload.js.</p>';
         return;
     }
 
     const loadAgents = async () => {
         try {
-            // Use the existing electronAPI, which now calls our refactored service indirectly.
-            const agents = await window.electronAPI.getAgents();
+            const agents = await api.getAgents();
             if (agents.error) throw new Error(agents.error);
 
             agentListContainer.innerHTML = '<h3>Agents</h3>';
@@ -34,8 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadTopics = async (agentId) => {
         try {
-            console.log(`Loading topics for agent: ${agentId}`);
-            const topics = await window.electronAPI.getAgentTopics(agentId);
+            const topics = await api.getAgentTopics(agentId);
             if (topics.error) throw new Error(topics.error);
 
             topicsListContainer.innerHTML = '<h3>Topics</h3>';
@@ -53,15 +59,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadMessages = async (agentId, topicId) => {
         try {
-            console.log(`Loading messages for agent ${agentId}, topic ${topicId}`);
-            const messages = await window.electronAPI.getChatHistory(agentId, topicId);
+            const messages = await api.getChatHistory(agentId, topicId);
             if (messages.error) throw new Error(messages.error);
 
             messagesContainer.innerHTML = '<h3>Messages</h3>';
             messages.forEach(msg => {
                 const msgEl = document.createElement('div');
                 msgEl.className = `message ${msg.role}`;
-                msgEl.innerText = msg.content;
+
+                const textEl = document.createElement('span');
+                textEl.innerText = msg.content;
+                msgEl.appendChild(textEl);
+
+                if (msg.role === 'assistant') {
+                    const readBtn = document.createElement('button');
+                    readBtn.innerText = '🔊';
+                    readBtn.style.marginLeft = '10px';
+                    readBtn.onclick = () => readMessageAloud(msg.content);
+                    msgEl.appendChild(readBtn);
+                }
+
                 messagesContainer.appendChild(msgEl);
             });
         } catch (error) {
@@ -69,10 +86,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const readMessageAloud = async (text) => {
+        try {
+            const ttsServerUrl = ttsServerUrlInput.value;
+            if (!ttsServerUrl) {
+                alert('Please enter the TTS Server URL.');
+                return;
+            }
+            console.log(`Requesting TTS for: "${text}" from ${ttsServerUrl}`);
+
+            // For this PoC, we'll use a default voice.
+            // A real app would fetch models and let the user choose.
+            const options = {
+                text: text,
+                voice: '默认', // Using a default voice
+                speed: 1.0
+            };
+
+            const audioBuffer = await ttsApi.speak(options, ttsServerUrl);
+
+            if (audioBuffer && audioBuffer.type === 'Buffer' && audioBuffer.data) {
+                // The buffer from the backend is an object { type: 'Buffer', data: [...] }
+                const blob = new Blob([new Uint8Array(audioBuffer.data)], { type: 'audio/mpeg' });
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(audioUrl);
+                audio.play();
+                console.log('Playing TTS audio.');
+            } else {
+                throw new Error('Received invalid audio data from TTS service.');
+            }
+
+        } catch (error) {
+            console.error('Failed to read message aloud:', error);
+            alert(`Error playing TTS: ${error.message}`);
+        }
+    };
+
     launchDiceRollerBtn.addEventListener('click', () => {
-        console.log('Launch Dice Roller clicked');
-        // This would invoke the main process to open the dice window
-        window.electronAPI.openDiceWindow();
+        api.openDiceWindow();
     });
 
     // Initial load
