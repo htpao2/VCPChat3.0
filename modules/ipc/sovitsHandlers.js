@@ -1,16 +1,42 @@
+// modules/ipc/sovitsHandlers.refactored.js
 const { ipcMain } = require('electron');
-const SovitsTTS = require('../SovitsTTS');
+const SovitsTTS = require('../SovitsTTS'); // The original class still manages the queue for the desktop app
+const ttsService = require('../../src/services/ttsService');
 
 let sovitsTTSInstance = null;
-let internalMainWindow = null; // 用于在 handler 内部可靠地访问 mainWindow
+let internalMainWindow = null;
 
-function initialize(mainWindow) {
+// This is a temporary bridge. The long-term goal would be for the SovitsTTS class itself to use the ttsService.
+// For now, we will inject the service's functionality into the old class structure.
+function patchSovitsTTS_to_use_service() {
+    SovitsTTS.prototype.getModels = function(forceRefresh = false) {
+        // The desktop app assumes a hardcoded local server.
+        const ttsServerUrl = "http://127.0.0.1:8000";
+        return ttsService.getModels(forceRefresh, ttsServerUrl);
+    };
+
+    SovitsTTS.prototype.textToSpeech = function(text, voice, speed) {
+        const ttsServerUrl = "http://127.0.0.1:8000";
+        return ttsService.speak({ text, voice, speed }, ttsServerUrl);
+    };
+}
+
+
+function initialize(mainWindow, context) { // Added context
     if (!mainWindow) {
-        console.error("SovitsTTS needs the main window to initialize."); // Translated for clarity
+        console.error("SovitsTTS needs the main window to initialize.");
         return;
     }
-    internalMainWindow = mainWindow; // Save reference to mainWindow
-    sovitsTTSInstance = new SovitsTTS(); // No longer pass mainWindow
+    internalMainWindow = mainWindow;
+
+    // Initialize the service with the correct paths
+    ttsService.initialize(context);
+
+    // Patch the old class to use the new service
+    patchSovitsTTS_to_use_service();
+
+    // Now, create an instance of the patched class
+    sovitsTTSInstance = new SovitsTTS();
 
     ipcMain.handle('sovits-get-models', async (event, forceRefresh) => {
         if (!sovitsTTSInstance) return null;
@@ -19,30 +45,20 @@ function initialize(mainWindow) {
 
     ipcMain.on('sovits-speak', (event, options) => {
         if (!sovitsTTSInstance) return;
-        // The speak method now expects a single options object.
-        sovitsTTSInstance.stop(); // Ensure any previous speech is stopped.
-        // Pass the event sender to the speak method to reply to the correct window
+        sovitsTTSInstance.stop();
         sovitsTTSInstance.speak(options, event.sender);
     });
 
     ipcMain.on('sovits-stop', () => {
-        // 首先，让 SovitsTTS 实例清理其内部状态（如队列）
         if (sovitsTTSInstance) {
             sovitsTTSInstance.stop();
         }
-        
-        // 关键修复：直接从 IPC handler 发送停止事件到渲染器，
-        // 确保无论 SovitsTTS 实例的状态如何，停止命令都能被发送。
         if (internalMainWindow && !internalMainWindow.isDestroyed()) {
-            console.log("[IPC Handler] Directly sending 'stop-tts-audio' to renderer.");
             internalMainWindow.webContents.send('stop-tts-audio');
-        } else {
-            console.error("[IPC Handler] Cannot send 'stop-tts-audio', mainWindow reference is invalid.");
         }
     });
 
-
-    console.log('SovitsTTS IPC handlers initialisés.');
+    console.log('Refactored SovitsTTS IPC handlers initialized.');
 }
 
 module.exports = {
