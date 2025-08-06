@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCP Mobile</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f0f0; color: #333; margin: 0; padding: 1em; }
+        h1, h2 { color: #1a1a1a; }
+        #app { max-width: 600px; margin: 0 auto; background: #fff; padding: 1em; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
+        button:hover { background-color: #0056b3; }
+        #content { margin-top: 1em; padding: 1em; border: 1px solid #ddd; border-radius: 5px; }
+        .topic { padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .topic:hover { background-color: #f9f9f9; }
+        .message { margin-bottom: 0.5em; padding: 8px; border-radius: 5px; }
+        .message.user { background-color: #e1f5fe; text-align: right; }
+        .message.assistant { background-color: #f1f8e9; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>VCP Mobile PoC</h1>
+
+        <div id="chat-controls">
+            <h2>Chat Integration</h2>
+            <p>Select an agent to view their topics.</p>
+            <div id="agent-list"></div>
+            <hr>
+            <div id="topics-list"></div>
+            <hr>
+            <div id="messages-container"></div>
+        </div>
+
+        <hr>
+
+        <div id="dice-controls">
+            <h2>Dice Roller</h2>
+            <button id="launch-dice-roller">Launch 3D Dice Roller</button>
+            <div id="dice-container"></div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -16,10 +16,10 @@ const fileManager = require('./modules/fileManager'); // Import the new file man
 const groupChat = require('./Groupmodules/groupchat'); // Import the group chat module
 const DistributedServer = require('./VCPDistributedServer/VCPDistributedServer.js'); // Import the new distributed server
 const windowHandlers = require('./modules/ipc/windowHandlers'); // Import window IPC handlers
-const settingsHandlers = require('./modules/ipc/settingsHandlers'); // Import settings IPC handlers
+const settingsHandlers = require('./modules/ipc/settingsHandlers.refactored.js'); // Import settings IPC handlers
 const fileDialogHandlers = require('./modules/ipc/fileDialogHandlers'); // Import file dialog handlers
 const { getAgentConfigById, ...agentHandlers } = require('./modules/ipc/agentHandlers'); // Import agent handlers
-const chatHandlers = require('./modules/ipc/chatHandlers'); // Import chat handlers
+const chatHandlers = require('./modules/ipc/chatHandlers.refactored.js'); // Import chat handlers
 const groupChatHandlers = require('./modules/ipc/groupChatHandlers'); // Import group chat handlers
 const sovitsHandlers = require('./modules/ipc/sovitsHandlers'); // Import SovitsTTS IPC handlers
 const notesHandlers = require('./modules/ipc/notesHandlers'); // Import notes handlers
@@ -30,6 +30,7 @@ const themeHandlers = require('./modules/ipc/themeHandlers'); // Import theme ha
 const emoticonHandlers = require('./modules/ipc/emoticonHandlers'); // Import emoticon handlers
 const musicMetadata = require('music-metadata');
 const speechRecognizer = require('./modules/speechRecognizer'); // Import the new speech recognizer
+const vcpServices = require('./src/index.js'); // Import the headless services library
 
 // --- Configuration Paths ---
 // Data storage will be within the project's 'AppData' directory
@@ -238,6 +239,19 @@ if (!gotTheLock) {
     fs.ensureDirSync(RESAMPLE_CACHE_DIR); // Ensure the resample cache directory exists
     fileManager.initializeFileManager(USER_DATA_DIR, AGENT_DIR); // Initialize FileManager
     groupChat.initializePaths({ APP_DATA_ROOT_IN_PROJECT, AGENT_DIR, USER_DATA_DIR, SETTINGS_FILE }); // Initialize GroupChat paths
+
+    // Initialize the headless services library
+    vcpServices.initialize({
+        paths: {
+            AGENT_DIR,
+            USER_DATA_DIR,
+            APP_DATA_ROOT_IN_PROJECT,
+            NOTES_AGENT_ID,
+            SETTINGS_FILE,
+            USER_AVATAR_FILE
+        }
+    });
+
     settingsHandlers.initialize({ SETTINGS_FILE, USER_AVATAR_FILE, AGENT_DIR }); // Initialize settings handlers
 
    // Function to fetch and cache models from the VCP server

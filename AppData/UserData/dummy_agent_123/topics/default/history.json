@@ -1,0 +1,12 @@
+[
+  {
+    "role": "user",
+    "content": "Hello, this is a test message.",
+    "id": "msg_1"
+  },
+  {
+    "role": "assistant",
+    "content": "This is a test response from the dummy agent.",
+    "id": "msg_2"
+  }
+]

@@ -310,3 +310,7 @@ const electronAPIForLogging = {
 };
 console.log('[Preload] electronAPI object that *should* be exposed (structure check):', electronAPIForLogging);
 console.log('preload.js loaded and contextBridge exposure attempted.');
+
+// Expose the new VCP Services for the mobile app PoC
+const { vcpServices } = require('./src/index.js');
+contextBridge.exposeInMainWorld('vcpServices', vcpServices);
