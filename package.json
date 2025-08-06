@@ -8,7 +8,7 @@
     "start": "electron .",
     "pack": "electron-rebuild -f -w selection-hook && electron-builder --dir",
     "dist": "electron-rebuild -f -w selection-hook && electron-builder",
-    "build:mobile": "cd cordova_temp && cordova build android -- --x86"
+    "build:mobile": "cd cordova_temp && cordova platform add android && cordova build android -- --x86"
   },
   "keywords": [
     "VCP",
