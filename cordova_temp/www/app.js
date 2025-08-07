@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     launchDiceRollerBtn.disabled = true;
     launchDiceRollerBtn.innerText = "Dice Roller (Desktop Only)";
 
+    // Add event listener to reload data when the server URL is changed.
     apiServerUrlInput.addEventListener('change', loadAgents);
 
     // Initial load
