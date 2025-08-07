@@ -130,6 +130,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listener to reload data when the server URL is changed.
     apiServerUrlInput.addEventListener('change', loadAgents);
 
+    const handleSimulatedVoiceChat = async () => {
+        if (!currentAgentId) {
+            alert("Please select an agent first.");
+            return;
+        }
+
+        const userInput = prompt("Simulating voice input. Please type your message:");
+        if (!userInput) return;
+
+        currentHistory.push({ role: 'user', content: userInput });
+        renderMessages();
+
+        const thinkingMessage = { role: 'assistant', content: '...' };
+        currentHistory.push(thinkingMessage);
+        renderMessages();
+
+        try {
+            const settings = await settingsService.loadSettings();
+            const fullText = await voiceService.sendMessage({
+                agentId: currentAgentId,
+                history: currentHistory.slice(0, -1),
+                vcpServerUrl: settings.vcpServerUrl,
+                vcpApiKey: settings.vcpApiKey
+            });
+            thinkingMessage.content = fullText;
+            renderMessages();
+        } catch(error) {
+            thinkingMessage.content = `Error: ${error.message}`;
+            renderMessages();
+        }
+    };
+
+    startVoiceChatBtn.addEventListener('click', handleSimulatedVoiceChat);
+
     // Initial load
     loadAgents();
 });
