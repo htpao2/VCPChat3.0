@@ -118,6 +118,35 @@ app.post('/api/vcp/chat', async (req, res) => {
     }
 });
 
+// Voice Chat Endpoint
+app.post('/api/voice/chat', async (req, res) => {
+    try {
+        const { agentId, history } = req.body;
+        if (!agentId || !history) {
+            return res.status(400).json({ error: 'agentId and history are required.' });
+        }
+
+        // Load settings from the server's file system
+        const settings = await settingsService.loadSettings();
+        if (!settings.vcpServerUrl || !settings.vcpApiKey) {
+            return res.status(500).json({ error: 'VCP server URL or API key is not configured on the server.' });
+        }
+
+        const fullText = await voiceService.sendMessage({
+            agentId,
+            history,
+            vcpServerUrl: settings.vcpServerUrl,
+            vcpApiKey: settings.vcpApiKey
+        });
+
+        res.json({ reply: fullText });
+
+    } catch (error) {
+        console.error("Voice Chat Endpoint Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;

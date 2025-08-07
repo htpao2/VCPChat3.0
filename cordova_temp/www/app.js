@@ -139,24 +139,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const userInput = prompt("Simulating voice input. Please type your message:");
         if (!userInput) return;
 
+        // Immediately add the user's message to the UI
         currentHistory.push({ role: 'user', content: userInput });
         renderMessages();
 
+        // Add a temporary "thinking" message to the UI
         const thinkingMessage = { role: 'assistant', content: '...' };
         currentHistory.push(thinkingMessage);
         renderMessages();
 
         try {
-            const settings = await settingsService.loadSettings();
-            const fullText = await voiceService.sendMessage({
-                agentId: currentAgentId,
-                history: currentHistory.slice(0, -1),
-                vcpServerUrl: settings.vcpServerUrl,
-                vcpApiKey: settings.vcpApiKey
+            // Call the new API endpoint on our server
+            const response = await fetch(`${getApiBase()}/api/voice/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    agentId: currentAgentId,
+                    history: currentHistory.slice(0, -1) // Send history before the "thinking" message
+                })
             });
-            thinkingMessage.content = fullText;
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || `Server returned ${response.status}`);
+            }
+
+            const data = await response.json();
+            // Replace the "thinking" message with the actual reply
+            thinkingMessage.content = data.reply;
             renderMessages();
+
         } catch(error) {
+            // Update the "thinking" message to show the error
             thinkingMessage.content = `Error: ${error.message}`;
             renderMessages();
         }
