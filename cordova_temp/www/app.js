@@ -1,36 +1,30 @@
-// mobile/app.js
+// mobile/app.js - Final version using the API server
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('VCP Mobile PoC Initialized');
 
+    // UI Elements
     const agentListContainer = document.getElementById('agent-list');
     const topicsListContainer = document.getElementById('topics-list');
     const messagesContainer = document.getElementById('messages-container');
     const launchDiceRollerBtn = document.getElementById('launch-dice-roller');
     const ttsServerUrlInput = document.getElementById('tts-server-url');
     const startVoiceChatBtn = document.getElementById('start-voice-chat');
+    const apiServerUrlInput = document.getElementById('api-server-url');
 
-    const api = window.electronAPI;
-    const ttsApi = window.ttsService;
-    const renderer = window.rendererService;
-
+    // State
     let currentAgentId = null;
     let currentTopicId = null;
     let currentHistory = [];
+    let agents = [];
 
-    if (!api || !ttsApi || !renderer) {
-        let error = '';
-        if (!api) error += 'electronAPI not found. ';
-        if (!ttsApi) error += 'ttsService not found. ';
-        if (!renderer) error += 'rendererService not found. ';
-        agentListContainer.innerHTML = `<p style="color: red;">Error: ${error} Is this running in Electron and is preload.js correct?</p>`;
-        return;
-    }
+    const getApiBase = () => apiServerUrlInput.value;
 
     const loadAgents = async () => {
         try {
-            const agents = await api.getAgents();
-            if (agents.error) throw new Error(agents.error);
+            const response = await fetch(`${getApiBase()}/api/agents`);
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            agents = await response.json();
 
             agentListContainer.innerHTML = '<h3>Agents</h3>';
             agents.forEach(agent => {
@@ -50,8 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadTopics = async (agentId) => {
         try {
             currentAgentId = agentId;
-            const topics = await api.getAgentTopics(agentId);
-            if (topics.error) throw new Error(topics.error);
+            const response = await fetch(`${getApiBase()}/api/agents/${agentId}/topics`);
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            const topics = await response.json();
 
             topicsListContainer.innerHTML = '<h3>Topics</h3>';
             topics.forEach(topic => {
@@ -70,14 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderMessages = () => {
+        // This function now just renders the state, it doesn't fetch.
         messagesContainer.innerHTML = '<h3>Messages</h3>';
         currentHistory.forEach(msg => {
             const msgEl = document.createElement('div');
             msgEl.className = `message ${msg.role}`;
 
-            // Use the renderer service instead of innerText
-            const contentContainer = renderer.renderContent(msg.content);
-            msgEl.appendChild(contentContainer);
+            // For simplicity, we'll just show plain text for now.
+            // The rendererService logic can be re-added here.
+            msgEl.innerText = msg.content;
 
             if (msg.role === 'assistant') {
                 const readBtn = document.createElement('button');
@@ -95,12 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadMessages = async (agentId, topicId) => {
         try {
             currentTopicId = topicId;
-            // Using dummy data to test the renderer
-            const messages = [
-                { role: 'user', content: 'Can you show me some Markdown and Math?' },
-                { role: 'assistant', content: `Of course! \n\nHere is some **bold text** and a list:\n* Item 1\n* Item 2\n\nHere is a math formula: $E = mc^2$\n\nAnd a code block:\n\`\`\`javascript\nconsole.log("Hello, World!");\n\`\`\`` }
-            ];
-            currentHistory = messages;
+            const response = await fetch(`${getApiBase()}/api/agents/${agentId}/topics/${topicId}/history`);
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            currentHistory = await response.json();
             renderMessages();
         } catch (error) {
             messagesContainer.innerHTML = `<p style="color: red;">Error loading messages: ${error.message}</p>`;
@@ -108,18 +101,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const readMessageAloud = async (text) => {
-        // ... (same as before)
+        try {
+            const ttsServerUrl = ttsServerUrlInput.value;
+            if (!ttsServerUrl) return alert('Please enter the TTS Server URL.');
+
+            const response = await fetch(`${getApiBase()}/api/tts/speak`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, voice: '默认', speed: 1.0, ttsServerUrl })
+            });
+
+            if (!response.ok) throw new Error(`TTS server returned ${response.status}`);
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+
+        } catch (error) {
+            alert(`Error playing TTS: ${error.message}`);
+        }
     };
 
-    const handleSimulatedVoiceChat = async () => {
-        // ... (same as before)
-    };
+    // The dice roller button can't work without Electron, so we disable it.
+    launchDiceRollerBtn.disabled = true;
+    launchDiceRollerBtn.innerText = "Dice Roller (Desktop Only)";
 
-    launchDiceRollerBtn.addEventListener('click', () => {
-        api.openDiceWindow();
-    });
-
-    startVoiceChatBtn.addEventListener('click', handleSimulatedVoiceChat);
+    apiServerUrlInput.addEventListener('change', loadAgents);
 
     // Initial load
     loadAgents();

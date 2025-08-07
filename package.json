@@ -8,6 +8,7 @@
     "start": "electron .",
     "pack": "electron-rebuild -f -w selection-hook && electron-builder --dir",
     "dist": "electron-rebuild -f -w selection-hook && electron-builder",
+    "start:server": "node server.js",
     "build:mobile": "cd cordova_temp && cordova platform add android@12.0.1 && cordova build android -- --x86"
   },
   "keywords": [
