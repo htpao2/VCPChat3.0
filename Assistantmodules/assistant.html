@@ -20,6 +20,7 @@
     <script defer src="../vendor/auto-render.min.js" crossorigin="anonymous"></script>
 </head>
 <body id="assistant-window-body" class="main-content">
+    <canvas id="live2d-canvas" width="400" height="400" style="position: fixed; top: 50px; right: 0;"></canvas>
     <div class="title-bar-assistant">
         <div class="title-bar-text-assistant">
             <img id="agentAvatar" src="" alt="Agent" class="avatar">
@@ -51,6 +52,8 @@
     <script type="module" src="../modules/renderer/contentProcessor.js"></script>
     <script type="module" src="../modules/renderer/messageContextMenu.js"></script>
     <script type="module" src="../modules/messageRenderer.js"></script>
+    <script src="../vendor/pixi.min.js"></script>
+    <script src="../vendor/pixi-live2d-display.min.js"></script>
     <script src="assistant.js" defer></script>
 </body>
 </html>

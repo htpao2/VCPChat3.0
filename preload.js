@@ -120,7 +120,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     notesRendererReady: () => ipcRenderer.send('notes-renderer-ready'), // New, more reliable signal
     // Open Translator Window
     openTranslatorWindow: (theme) => ipcRenderer.invoke('open-translator-window', theme),
- 
+
     // Agent and Topic Order
     saveAgentOrder: (orderedAgentIds) => ipcRenderer.invoke('save-agent-order', orderedAgentIds),
     saveTopicOrder: (agentId, orderedTopicIds) => ipcRenderer.invoke('save-topic-order', agentId, orderedTopicIds),
@@ -199,9 +199,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     unmaximizeWindow: () => ipcRenderer.send('unmaximize-window'),
     closeWindow: () => ipcRenderer.send('close-window'),
     openDevTools: () => ipcRenderer.send('open-dev-tools'),
-    sendToggleNotificationsSidebar: () => ipcRenderer.send('toggle-notifications-sidebar'), 
-    onDoToggleNotificationsSidebar: (callback) => ipcRenderer.on('do-toggle-notifications-sidebar', (_event) => callback()), 
-    openAdminPanel: () => ipcRenderer.invoke('open-admin-panel'), 
+    sendToggleNotificationsSidebar: () => ipcRenderer.send('toggle-notifications-sidebar'),
+    onDoToggleNotificationsSidebar: (callback) => ipcRenderer.on('do-toggle-notifications-sidebar', (_event) => callback()),
+    openAdminPanel: () => ipcRenderer.invoke('open-admin-panel'),
     onWindowMaximized: (callback) => ipcRenderer.on('window-maximized', (_event) => callback()),
     onWindowUnmaximized: (callback) => ipcRenderer.on('window-unmaximized', (_event) => callback()),
 
@@ -267,6 +267,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     sovitsStop: () => ipcRenderer.send('sovits-stop'),
     onPlayTtsAudio: (callback) => ipcRenderer.on('play-tts-audio', (_event, data) => callback(data)), // { audioData }
     onStopTtsAudio: (callback) => ipcRenderer.on('stop-tts-audio', (_event) => callback()),
+    requestSpeakInAssistant: (options) => ipcRenderer.send('request-speak-in-assistant', options),
+    onSpeakThisText: (callback) => ipcRenderer.on('speak-this-text', (_event, data) => callback(data)),
+
+    // Screen Share
+    startScreenShare: () => ipcRenderer.send('start-screen-share'),
+    onScreenShareSource: (callback) => ipcRenderer.on('screen-share-source', (_event, sourceId) => callback(sourceId)),
 
     // Emoticons
     getEmoticonLibrary: () => ipcRenderer.invoke('get-emoticon-library'),
@@ -308,13 +314,13 @@ const electronAPIForLogging = {
     saveChatHistory: "function", handleFilePaste: "function", selectFilesToSend: "function",
     getFileAsBase64: "function", getTextContent: "function", handleTextPasteAsFile: "function",
     handleFileDrop: "function",
-    readTxtNotes: "function", 
-    writeTxtNote: "function", 
-    deleteTxtNote: "function", 
+    readTxtNotes: "function",
+    writeTxtNote: "function",
+    deleteTxtNote: "function",
     openNotesWindow: "function",
-    openNotesWithContent: "function", 
-    saveAgentOrder: "function", 
-    saveTopicOrder: "function", 
+    openNotesWithContent: "function",
+    saveAgentOrder: "function",
+    saveTopicOrder: "function",
     sendToVCP: "function", onVCPStreamChunk: "function",
     connectVCPLog: "function", disconnectVCPLog: "function", onVCPLogMessage: "function",
     onVCPLogStatus: "function", readImageFromClipboard: "function", readTextFromClipboard: "function",

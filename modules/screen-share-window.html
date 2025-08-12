@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Screen Share</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        video {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <video autoplay></video>
+    <script>
+        const videoElement = document.querySelector('video');
+
+        window.electronAPI.onScreenShareSource(async (sourceId) => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: {
+                        mandatory: {
+                            chromeMediaSource: 'desktop',
+                            chromeMediaSourceId: sourceId,
+                            minWidth: 1280,
+                            maxWidth: 1280,
+                            minHeight: 720,
+                            maxHeight: 720
+                        }
+                    }
+                });
+                videoElement.srcObject = stream;
+                videoElement.onloadedmetadata = () => videoElement.play();
+            } catch (e) {
+                console.error('Error getting screen share stream:', e);
+            }
+        });
+    </script>
+</body>
+</html>

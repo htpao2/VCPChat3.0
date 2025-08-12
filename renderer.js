@@ -29,6 +29,7 @@ const chatMessagesDiv = document.getElementById('chatMessages');
 const messageInput = document.getElementById('messageInput');
 const sendMessageBtn = document.getElementById('sendMessageBtn');
 const attachFileBtn = document.getElementById('attachFileBtn');
+const screenShareBtn = document.getElementById('screenShareBtn');
 const attachmentPreviewArea = document.getElementById('attachmentPreviewArea');
 
 const globalSettingsBtn = document.getElementById('globalSettingsBtn');
@@ -532,6 +533,7 @@ import * as interruptHandler from './modules/interruptHandler.js';
                 messageInput: messageInput,
                 sendMessageBtn: sendMessageBtn,
                 attachFileBtn: attachFileBtn,
+                screenShareBtn: screenShareBtn,
             },
             mainRendererFunctions: {
                 displaySettingsForItem: () => window.settingsManager.displaySettingsForItem(),
@@ -1339,6 +1341,12 @@ function setupEventListeners() {
     if (agentSearchInput) {
         agentSearchInput.addEventListener('input', (e) => {
             filterAgentList(e.target.value);
+        });
+    }
+
+    if (screenShareBtn) {
+        screenShareBtn.addEventListener('click', () => {
+            window.electronAPI.startScreenShare();
         });
     }
 }

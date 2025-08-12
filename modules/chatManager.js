@@ -62,7 +62,7 @@ window.chatManager = (() => {
     // --- Functions moved from renderer.js ---
 
     function displayNoItemSelected() {
-        const { currentChatNameH3, chatMessagesDiv, currentItemActionBtn, messageInput, sendMessageBtn, attachFileBtn } = elements;
+        const { currentChatNameH3, chatMessagesDiv, currentItemActionBtn, messageInput, sendMessageBtn, attachFileBtn, screenShareBtn } = elements;
         const voiceChatBtn = document.getElementById('voiceChatBtn');
         currentChatNameH3.textContent = '选择一个 Agent 或群组开始聊天';
         chatMessagesDiv.innerHTML = `<div class="message-item system welcome-bubble"><p>欢迎！请从左侧选择AI助手/群组，或创建新的开始对话。</p></div>`;
@@ -71,6 +71,7 @@ window.chatManager = (() => {
         messageInput.disabled = true;
         sendMessageBtn.disabled = true;
         attachFileBtn.disabled = true;
+        screenShareBtn.disabled = true;
         if (mainRendererFunctions.displaySettingsForItem) {
             mainRendererFunctions.displaySettingsForItem(); 
         }
@@ -182,6 +183,7 @@ window.chatManager = (() => {
         messageInput.disabled = false;
         sendMessageBtn.disabled = false;
         attachFileBtn.disabled = false;
+        elements.screenShareBtn.disabled = false;
         // messageInput.focus();
         if (topicListManager) topicListManager.loadTopicList();
     }

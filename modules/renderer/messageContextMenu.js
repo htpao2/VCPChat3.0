@@ -222,14 +222,13 @@ function showContextMenu(event, messageItem, message) {
                         }
                         
                         if (textToRead.trim()) {
-                            // Pass bilingual TTS settings
-                            electronAPI.sovitsSpeak({
+                            // Instead of speaking directly, request the assistant window to speak.
+                            electronAPI.requestSpeakInAssistant({
                                 text: textToRead,
-                                voice: agentConfig.ttsVoicePrimary, // Legacy 'voice' is now primary
+                                voice: agentConfig.ttsVoicePrimary,
                                 speed: agentConfig.ttsSpeed || 1.0,
                                 msgId: message.id,
-                                ttsRegex: agentConfig.ttsRegexPrimary, // Legacy 'ttsRegex' is now primary
-                                // New bilingual fields
+                                ttsRegex: agentConfig.ttsRegexPrimary,
                                 voiceSecondary: agentConfig.ttsVoiceSecondary,
                                 ttsRegexSecondary: agentConfig.ttsRegexSecondary
                             });

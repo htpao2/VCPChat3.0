@@ -256,4 +256,122 @@ window.electronAPI.onAssistantData(async (data) => {
             sendMessage(messageInput.value);
         }
     });
+
+    let live2dModel = null;
+    // --- Live2D Initialization ---
+    // NOTE: This code assumes that pixi.js and pixi-live2d-display.js have been loaded,
+    // and that PIXI is available on the window object. The placeholder files will not
+    // actually provide this, so this code will not run successfully in the current environment.
+    (async function() {
+        try {
+            const canvas = document.getElementById('live2d-canvas');
+            if (!canvas) {
+                console.error('Live2D canvas not found!');
+                return;
+            }
+
+            // PIXI is expected to be a global from pixi.min.js
+            const app = new PIXI.Application({
+                view: canvas,
+                width: canvas.width,
+                height: canvas.height,
+                transparent: true,
+                autoStart: true,
+            });
+
+            // PIXI.live2d is expected to be a global from pixi-live2d-display.min.js
+            live2dModel = await PIXI.live2d.Live2DModel.from('../Live2Dmodels/Mao/Mao.model3.json');
+
+            app.stage.addChild(live2dModel);
+
+            // Scale and position the model
+            live2dModel.scale.set(0.2);
+            live2dModel.x = 100;
+            live2dModel.y = 100;
+
+            console.log('Live2D model loaded successfully.');
+
+        } catch (error) {
+            console.error('Failed to initialize Live2D:', error);
+            // It is expected to fail in this environment because of placeholder libraries.
+        }
+    })();
+
+    // --- TTS Audio Playback and Mouth Sync ---
+    let audioContext = null;
+    let analyser = null;
+    let audioSource = null;
+    let dataArray = null;
+
+    function initAudioContext() {
+        if (!audioContext) {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            } catch (e) {
+                console.error("Failed to initialize AudioContext:", e);
+            }
+        }
+    }
+
+    function updateMouth() {
+        if (!analyser || !live2dModel) {
+            if (live2dModel) {
+                live2dModel.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', 0);
+            }
+            return;
+        }
+
+        analyser.getByteFrequencyData(dataArray);
+        let sum = dataArray.reduce((a, b) => a + b, 0);
+        let average = sum / dataArray.length;
+        let volume = Math.min(average / 100, 1.0); // Normalize and clamp
+
+        // Smooth the transition
+        const coreModel = live2dModel.internalModel.coreModel;
+        const currentMouthY = coreModel.getParameterValueById('ParamMouthOpenY');
+        const newMouthY = currentMouthY + (volume - currentMouthY) * 0.4;
+        coreModel.setParameterValueById('ParamMouthOpenY', newMouthY);
+
+        requestAnimationFrame(updateMouth);
+    }
+
+    window.electronAPI.onPlayTtsAudio(async ({ audioData, msgId, sessionId }) => {
+        initAudioContext();
+        if (!audioContext) return;
+
+        try {
+            const audioBuffer = await audioContext.decodeAudioData(
+                Uint8Array.from(atob(audioData), c => c.charCodeAt(0)).buffer
+            );
+
+            if (audioSource) {
+                audioSource.stop();
+            }
+
+            audioSource = audioContext.createBufferSource();
+            audioSource.buffer = audioBuffer;
+            audioSource.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            audioSource.onended = () => {
+                // Stop mouth movement when audio ends
+                if (live2dModel) {
+                    live2dModel.internalModel.coreModel.setParameterValueById('ParamMouthOpenY', 0);
+                }
+            };
+
+            audioSource.start(0);
+            updateMouth();
+
+        } catch (error) {
+            console.error("Error decoding or playing TTS audio:", error);
+        }
+    });
+
+    window.electronAPI.onSpeakThisText((options) => {
+        window.electronAPI.sovitsSpeak(options);
+    });
 });

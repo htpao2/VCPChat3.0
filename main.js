@@ -2,7 +2,7 @@
 
 const sharp = require('sharp'); // 确保在文件顶部引入
 
-const { app, BrowserWindow, ipcMain, nativeTheme, globalShortcut, screen, clipboard, shell, dialog, protocol } = require('electron'); // Added screen, clipboard, and shell
+const { app, BrowserWindow, ipcMain, nativeTheme, globalShortcut, screen, clipboard, shell, dialog, protocol, desktopCapturer } = require('electron'); // Added screen, clipboard, and shell
 // selection-hook is now managed in assistantHandlers
 const path = require('path');
 const crypto = require('crypto');
@@ -410,6 +410,53 @@ if (!gotTheLock) {
         getMusicState: musicHandlers.getMusicState
     });
     sovitsHandlers.initialize(mainWindow); // Initialize SovitsTTS handlers
+
+    // Add a handler to forward speak requests to the assistant window
+    ipcMain.on('request-speak-in-assistant', (event, options) => {
+        const { assistantWindow } = assistantHandlers.getAssistantWindows();
+        if (assistantWindow && !assistantWindow.isDestroyed()) {
+            assistantWindow.webContents.send('speak-this-text', options);
+        } else {
+            // Optional: handle the case where the assistant window is not open.
+            // For now, we'll just log it.
+            console.log('Speak request received, but assistant window is not open.');
+        }
+    });
+
+    // --- Screen Sharing IPC Handler ---
+    ipcMain.on('start-screen-share', async (event) => {
+        try {
+            const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
+
+            // For now, lets just pick the first screen source
+            const primaryScreenSource = sources.find(source => source.display_id);
+
+            if (primaryScreenSource) {
+                const screenShareWindow = new BrowserWindow({
+                    width: 1280,
+                    height: 720,
+                    webPreferences: {
+                        preload: path.join(__dirname, 'preload.js'),
+                        contextIsolation: true,
+                    }
+                });
+
+                screenShareWindow.loadFile('modules/screen-share-window.html');
+
+                screenShareWindow.webContents.on('did-finish-load', () => {
+                    screenShareWindow.webContents.send('screen-share-source', primaryScreenSource.id);
+                });
+
+            } else {
+                console.error('No screen source found for sharing.');
+            }
+
+        } catch (e) {
+            console.error('Error starting screen share:', e);
+        }
+    });
+
+
     musicHandlers.initialize({ mainWindow, openChildWindows, APP_DATA_ROOT_IN_PROJECT, startAudioEngine, stopAudioEngine });
     diceHandlers.initialize({ projectRoot: PROJECT_ROOT });
     themeHandlers.initialize({ mainWindow, openChildWindows, projectRoot: PROJECT_ROOT, APP_DATA_ROOT_IN_PROJECT });
