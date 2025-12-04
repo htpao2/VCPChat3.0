@@ -35,6 +35,8 @@ class DistributedServer {
         this.stopped = false; // Flag to prevent reconnection when stopped manually
         this.initialConnection = true; // Flag to handle one-time actions on first connect
         this.staticPlaceholderUpdateInterval = null; // 新增：静态占位符更新定时器
+        this.adminUsername = null;
+        this.adminPassword = null;
     }
 
     async initialize() {
@@ -52,10 +54,71 @@ class DistributedServer {
                         console.log(`[${this.serverName}] Port loaded from config.env: ${this.port}`);
                     }
                 }
+                // Load Admin Credentials
+                this.adminUsername = serverEnv.AdminUsername;
+                this.adminPassword = serverEnv.AdminPassword;
             }
         } catch (e) {
             console.error(`[${this.serverName}] Error reading server config.env:`, e);
         }
+
+        // Manual Basic Auth Middleware for Admin API
+        const adminAuthMiddleware = (req, res, next) => {
+            if (!req.path.startsWith('/admin_api')) {
+                return next();
+            }
+
+            if (!this.adminUsername || !this.adminPassword) {
+                 return res.status(503).json({ error: 'Service Unavailable: Admin credentials not configured on server.' });
+            }
+
+            const authheader = req.headers.authorization;
+            if (!authheader) {
+                res.setHeader('WWW-Authenticate', 'Basic realm="VCP Distributed Server Admin"');
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const auth = Buffer.from(authheader.split(' ')[1], 'base64').toString().split(':');
+            const user = auth[0];
+            const pass = auth[1];
+
+            if (user === this.adminUsername && pass === this.adminPassword) {
+                next();
+            } else {
+                res.setHeader('WWW-Authenticate', 'Basic realm="VCP Distributed Server Admin"');
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+        };
+
+        this.app.use(adminAuthMiddleware);
+
+        // Tool Listing Endpoint (Matching VCPToolBox structure)
+        this.app.get('/admin_api/tool-list-editor/tools', (req, res) => {
+            try {
+                const tools = [];
+                // pluginManager.getAllPluginManifests() returns an array of manifests
+                const manifests = pluginManager.getAllPluginManifests();
+
+                for (const manifest of manifests) {
+                    const pluginName = manifest.name;
+                    if (manifest.capabilities && manifest.capabilities.invocationCommands) {
+                        manifest.capabilities.invocationCommands.forEach(cmd => {
+                            tools.push({
+                                name: cmd.commandIdentifier || pluginName,
+                                pluginName: pluginName,
+                                displayName: manifest.displayName || pluginName,
+                                description: cmd.description || manifest.description || '',
+                                example: cmd.example || ''
+                            });
+                        });
+                    }
+                }
+                res.json({ tools });
+            } catch (error) {
+                console.error(`[${this.serverName}] Error listing tools:`, error);
+                res.status(500).json({ error: 'Failed to list tools', details: error.message });
+            }
+        });
 
         // The base path should be relative to this file's location.
         const basePath = path.dirname(require.resolve('./VCPDistributedServer.js'));
@@ -94,7 +157,7 @@ class DistributedServer {
             this.reconnectInterval = 5000;
             this.registerTools();
             await this.reportIPAddress();
-            
+
             // 新增：设置静态占位符定期推送
             this.setupStaticPlaceholderUpdates();
         });
@@ -102,7 +165,7 @@ class DistributedServer {
         this.ws.on('message', (message) => {
             this.handleMainServerMessage(message);
         });
-        
+
         this.ws.on('close', () => {
             console.log(`[${this.serverName}] Disconnected from main server.`);
             // 新增：清理静态占位符更新定时器
@@ -198,7 +261,7 @@ class DistributedServer {
         } catch (e) {
             console.error(`[${this.serverName}] Could not fetch public IP:`, e.message);
         }
-        
+
         const payload = {
             type: 'report_ip',
             data: {
@@ -217,12 +280,12 @@ class DistributedServer {
         this.staticPlaceholderUpdateInterval = setInterval(() => {
             this.pushStaticPlaceholderValues();
         }, 30000); // 30秒
-        
+
         // 立即推送一次
         setTimeout(() => {
             this.pushStaticPlaceholderValues();
         }, 2000); // 2秒后第一次推送
-        
+
         if (this.debugMode) console.log(`[${this.serverName}] Static placeholder updates scheduled every 30 seconds.`);
     }
 
@@ -252,7 +315,7 @@ class DistributedServer {
                 placeholders: Object.fromEntries(placeholderValues)
             }
         };
-        
+
         this.sendMessage(payload);
         if (this.debugMode && logStaticPlugins) {
             console.log(`[${this.serverName}] Pushed ${placeholderValues.size} static placeholder values to main server.`);
@@ -316,7 +379,7 @@ class DistributedServer {
 
                     const fileBuffer = await fs.readFile(filePath);
                     const mimeType = mime.lookup(filePath) || 'application/octet-stream';
-                    
+
                     responsePayload = {
                         type: 'tool_result',
                         data: {
@@ -353,7 +416,7 @@ class DistributedServer {
                 if (commandPayload.status === 'error') {
                     throw new Error(commandPayload.error);
                 }
-                
+
                 if (typeof this.handleMusicControl !== 'function') {
                     throw new Error('Music control handler is not configured for the Distributed Server.');
                 }
@@ -364,7 +427,7 @@ class DistributedServer {
                 if (resultFromMain.status === 'error') {
                     throw new Error(resultFromMain.message);
                 }
-                
+
                 // For AI, we want a simple, natural language response.
                 let naturalResponse = `指令 '${commandPayload.command}' 已成功执行。`;
                 if (commandPayload.command === 'play' && commandPayload.target) {
@@ -390,7 +453,7 @@ class DistributedServer {
                 if (resultFromMain.status === 'error') {
                     throw new Error(resultFromMain.message);
                 }
-                
+
                 // The result from the dice roll is already structured, so we can pass it directly.
                 finalResult = resultFromMain.data;
 
@@ -399,16 +462,16 @@ class DistributedServer {
                 if (typeof this.handleFlowlockControl !== 'function') {
                     throw new Error('Flowlock control handler is not configured for the Distributed Server.');
                 }
-                
+
                 // The toolArgs contain the command and parameters
                 const resultFromMain = await this.handleFlowlockControl(toolArgs);
-                
+
                 if (resultFromMain.status === 'error') {
                     throw new Error(resultFromMain.message);
                 }
-                
+
                 finalResult = { message: resultFromMain.message };
-                
+
             } else {
                 // --- Default Handling for all other plugins ---
                 if (typeof result === 'object' && result !== null) {
@@ -422,7 +485,7 @@ class DistributedServer {
                         // We need to find the actual JSON string.
                         const jsonStartIndex = result.indexOf('{');
                         const jsonEndIndex = result.lastIndexOf('}');
-                        
+
                         if (jsonStartIndex === -1 || jsonEndIndex === -1) {
                             // If no JSON object is found, treat it as a raw string.
                             throw new SyntaxError("No JSON object found in plugin output.");
@@ -503,20 +566,20 @@ class DistributedServer {
     async stop() {
         console.log(`[${this.serverName}] Stopping server...`);
         this.stopped = true;
-        
+
         // 新增：清理静态占位符更新定时器
         this.clearStaticPlaceholderUpdates();
-        
+
         if (this.reconnectTimeoutId) {
             clearTimeout(this.reconnectTimeoutId);
             this.reconnectTimeoutId = null;
         }
-        
+
         // 新增：关闭插件管理器 - 使用异步方式，但不等待结果
         pluginManager.shutdownAllPlugins().catch(err => {
             console.error(`[${this.serverName}] Error during plugin shutdown:`, err);
         });
-        
+
         if (this.ws) {
             // Remove listeners to prevent reconnection logic from firing on manual close
             this.ws.removeAllListeners('close');
