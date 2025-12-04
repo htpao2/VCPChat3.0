@@ -24,6 +24,20 @@
             <h1>工具箱</h1>
             <p>一个为人类设计的直观工具调用界面。</p>
             <div class="header-actions">
+                <button id="settings-btn" class="settings-btn" style="
+                    background-color: var(--secondary-color, #6b7280);
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    margin-right: 10px;
+                ">
+                    <span style="font-size: 16px;">⚙️</span> 设置
+                </button>
                 <button id="workflow-btn" class="workflow-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -48,9 +62,61 @@
         </main>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settings-modal" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+    ">
+        <div style="
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+        ">
+            <h2 style="margin-top: 0; color: var(--primary-text);">设置</h2>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--secondary-text);">VCP Server URL</label>
+                <input type="text" id="setting-server-url" placeholder="http://127.0.0.1:3000" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--primary-text);">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--secondary-text);">VCP API Key</label>
+                <input type="password" id="setting-api-key" placeholder="vcp_api_key_..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--primary-text);">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--secondary-text);">Admin Username (Optional)</label>
+                <input type="text" id="setting-admin-user" placeholder="admin" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--primary-text);">
+                <div style="font-size: 12px; color: var(--secondary-text); margin-top: 4px;">Required to fetch tool list from server.</div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--secondary-text);">Admin Password (Optional)</label>
+                <input type="password" id="setting-admin-pass" placeholder="password" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--primary-text);">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="close-settings-btn" style="padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; background: var(--secondary-color, #6b7280); color: white;">取消</button>
+                <button id="save-settings-btn" style="padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; background: var(--primary-color); color: white;">保存并刷新</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 引入jsPlumb库 -->
     <script src="WorkflowEditormodules/jsplumb.min.js"></script>
-    
+
     <!-- 引入工作流编辑器模块 -->
     <script src="WorkflowEditormodules/WorkflowEditor_ApiConfigDialog.js"></script>
     <!-- AI 客户端（HTTP 实现 + 工厂），必须在 NodeManager 之前加载 -->
@@ -66,10 +132,9 @@
     <script src="WorkflowEditormodules/WorkflowEditor_ConnectionManager_Simplified.js"></script>
     <script src="WorkflowEditormodules/WorkflowEditor_Config.js"></script>
     <script src="WorkflowEditormodules/WorkflowEditor_PluginDialog.js"></script>
-    
+
     <!-- 引入 marked 库 -->
     <script src="../vendor/marked.min.js"></script>
     <script type="module" src="renderer.js"></script>
 </body>
 </html>
-
