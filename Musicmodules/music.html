@@ -158,7 +158,13 @@
         </div>
     </div>
     <!-- 确保 JS 在 body 结束前加载 -->
-    <script src="socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Check if running in browser
+        if (typeof require === 'undefined' && !window.electron) {
+            document.write('<script src="../web-polyfill.js"><\/script>');
+        }
+    </script>
     <script src="music.js"></script>
 </body>
 </html>
