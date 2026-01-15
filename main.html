@@ -24,6 +24,13 @@
     <script src="vendor/mermaid.min.js"></script>
     <script src="vendor/three.min.js"></script> <!-- 全局引入 three.js -->
     <script src="vendor/morphdom.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Check if running in browser
+        if (typeof require === 'undefined' && !window.electron) {
+            document.write('<script src="web-polyfill.js"><\/script>');
+        }
+    </script>
 </head>
 <body>
     <div class="seam-fixer" id="title-bar-seam-fixer"></div>
